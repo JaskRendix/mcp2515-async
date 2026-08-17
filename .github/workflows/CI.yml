@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run host tests
+        run: cargo test --all --verbose
+
+      - name: Check examples
+        run: cargo check --examples
+
+      - name: Add embedded target (RISC-V for ESP32-C series)
+        run: rustup target add riscv32imc-unknown-none-elf
+
+      - name: Cross-compile check for embedded target
+        run: cargo check --target riscv32imc-unknown-none-elf --no-default-features
