@@ -1,8 +1,8 @@
 mod common;
 
 use common::harness::TestDevice;
-use mcp2515_async::registers::{Instruction, OperationMode, Register};
 use mcp2515_async::BitrateConfig;
+use mcp2515_async::registers::{Instruction, OperationMode, Register};
 
 #[tokio::test]
 async fn reset_sends_correct_instruction() {

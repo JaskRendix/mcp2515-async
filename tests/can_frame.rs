@@ -1,4 +1,4 @@
-use mcp2515_async::can::{CanFrame, CAN_EFF_FLAG, CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_SFF_MASK};
+use mcp2515_async::can::{CAN_EFF_FLAG, CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_SFF_MASK, CanFrame};
 
 #[test]
 fn construct_standard_frame() {

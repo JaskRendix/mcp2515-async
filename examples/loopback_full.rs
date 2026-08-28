@@ -1,8 +1,8 @@
 use core::convert::Infallible;
 use embedded_hal_async::spi::{ErrorType, Operation, SpiDevice};
 use mcp2515_async::{
-    registers::{Instruction, OperationMode},
     Bitrate, BitrateConfig, Clock, Mcp2515,
+    registers::{Instruction, OperationMode},
 };
 
 // Minimal CAN frame

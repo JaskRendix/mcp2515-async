@@ -1,7 +1,7 @@
 use mcp2515_async::{
+    Mcp2515,
     config::{AcceptanceFilter, Bitrate, BitrateConfig, Clock, FilterMask},
     registers::OperationMode,
-    Mcp2515,
 };
 
 struct MockSpi;

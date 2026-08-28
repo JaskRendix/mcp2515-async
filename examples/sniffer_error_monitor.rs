@@ -2,7 +2,7 @@ use core::convert::Infallible;
 use embedded_hal::digital::ErrorType as DigitalErrorType;
 use embedded_hal_async::digital::Wait;
 use embedded_hal_async::spi::{ErrorType, Operation, SpiDevice};
-use mcp2515_async::{registers::OperationMode, Bitrate, BitrateConfig, Clock, Mcp2515};
+use mcp2515_async::{Bitrate, BitrateConfig, Clock, Mcp2515, registers::OperationMode};
 
 #[derive(Debug)]
 struct MockSpi;
