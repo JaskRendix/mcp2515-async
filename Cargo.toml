@@ -2,9 +2,6 @@
 name = "mcp2515-async"
 version = "0.1.0"
 edition = "2024"
-authors = ["Giorgio"]
-description = "Async no_std MCP2515 CAN controller driver for embedded-hal-async and Embassy"
-license = "MIT"
 
 [dependencies]
 embedded-hal = "1.0.0"
