@@ -259,10 +259,7 @@ where
         let mut res = [0u8; 14];
         let mut tx = [0u8; 14];
         tx[0] = read_instr as u8;
-        self.spi
-            .transfer(&mut res, &tx)
-            .await
-            .map_err(Error::Spi)?;
+        self.spi.transfer(&mut res, &tx).await.map_err(Error::Spi)?;
 
         let sidh = res[1];
         let sidl = res[2];
@@ -295,8 +292,7 @@ where
             i += 1;
         }
 
-        let frame = can::CanFrame::new(can_id, &data[..dlc as usize])
-            .ok_or(Error::InvalidFrame)?;
+        let frame = can::CanFrame::new(can_id, &data[..dlc as usize]).ok_or(Error::InvalidFrame)?;
 
         self.modify_register(Register::CanIntf, clear_mask, 0)
             .await?;
