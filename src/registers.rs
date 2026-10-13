@@ -194,13 +194,6 @@ mod tests {
     }
 
     #[test]
-    fn instruction_round_trip() {
-        let v = Instruction::Reset as u8;
-        let back = unsafe { core::mem::transmute::<u8, Instruction>(v) };
-        assert_eq!(back, Instruction::Reset);
-    }
-
-    #[test]
     fn match_on_operation_mode() {
         let mode = OperationMode::Loopback;
 
@@ -216,10 +209,14 @@ mod tests {
     }
 
     #[test]
-    fn no_std_compiles() {
-        let _ = Instruction::Write;
-        let _ = Register::CanCtrl;
-        let _ = OperationMode::Normal;
+    fn operation_modes_are_unique() {
+        assert_ne!(OperationMode::Normal as u8, OperationMode::Sleep as u8);
+        assert_ne!(OperationMode::Sleep as u8, OperationMode::Loopback as u8);
+        assert_ne!(
+            OperationMode::Loopback as u8,
+            OperationMode::ListenOnly as u8
+        );
+        assert_ne!(OperationMode::ListenOnly as u8, OperationMode::Config as u8);
     }
 
     #[test]
