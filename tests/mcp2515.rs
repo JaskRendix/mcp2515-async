@@ -2,6 +2,7 @@ mod common;
 
 use common::harness::TestDevice;
 use mcp2515_async::BitrateConfig;
+use mcp2515_async::can::{CAN_RTR_FLAG, CanFrame};
 use mcp2515_async::registers::{Instruction, OperationMode, Register};
 
 #[tokio::test]
@@ -16,19 +17,18 @@ async fn reset_sends_correct_instruction() {
 }
 
 #[tokio::test]
-async fn set_mode_sends_bitmod() {
-    let mut t = TestDevice::new();
+async fn set_mode_waits_for_requested_mode() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, OperationMode::Normal as u8]);
 
     t.dev.set_mode(OperationMode::Normal).await.unwrap();
 
-    assert_eq!(t.spi.writes().len(), 1);
     assert_eq!(
         t.spi.writes()[0],
         vec![
             Instruction::BitMod as u8,
             Register::CanCtrl as u8,
             0xE0,
-            OperationMode::Normal as u8
+            OperationMode::Normal as u8,
         ]
     );
 }
@@ -129,4 +129,30 @@ async fn set_bitrate_order_is_correct() {
             Register::Cnf3 as u8
         ]
     );
+}
+
+#[tokio::test]
+async fn set_mode_times_out_if_mode_never_changes() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0]);
+
+    let err = t.dev.set_mode(OperationMode::Loopback).await.unwrap_err();
+
+    assert_eq!(err, mcp2515_async::error::Error::ModeChangeTimeout);
+}
+
+#[tokio::test]
+async fn send_sets_rtr_bit_in_dlc() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0]);
+
+    let frame = CanFrame::new(CAN_RTR_FLAG | 0x123, &[]).unwrap();
+
+    t.dev.send(&frame).await.unwrap();
+
+    let writes = t.spi.writes();
+
+    assert_eq!(writes.len(), 2);
+
+    assert_eq!(writes[0][0], Instruction::LoadTx0 as u8);
+
+    assert_eq!(writes[0][5], 0x40);
 }

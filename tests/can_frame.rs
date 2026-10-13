@@ -42,3 +42,14 @@ fn extended_id_masking() {
     let f = CanFrame::new(id, &[0]).unwrap();
     assert_eq!(f.extended_id(), 0x1EADBEEF);
 }
+
+#[test]
+fn reject_dlc_greater_than_8() {
+    let data = [0u8; 9];
+    assert!(CanFrame::new(0x123, &data).is_err());
+}
+
+#[test]
+fn reject_invalid_standard_id() {
+    assert!(CanFrame::new(0xFFFF, &[1]).is_err());
+}
