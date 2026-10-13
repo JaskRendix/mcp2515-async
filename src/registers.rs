@@ -21,58 +21,143 @@ pub enum Instruction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Register {
+    // Filters
     RxF0SidH = 0x00,
     RxF0SidL = 0x01,
     RxF0Eid8 = 0x02,
     RxF0Eid0 = 0x03,
+
     RxF1SidH = 0x04,
     RxF1SidL = 0x05,
     RxF1Eid8 = 0x06,
     RxF1Eid0 = 0x07,
+
     RxF2SidH = 0x08,
     RxF2SidL = 0x09,
     RxF2Eid8 = 0x0A,
     RxF2Eid0 = 0x0B,
+
+    // Control Registers
+    BfpCtrl = 0x0C,
+    TxRtsCtrl = 0x0D,
+    CanStat = 0x0E,
+    CanCtrl = 0x0F,
+
     RxF3SidH = 0x10,
     RxF3SidL = 0x11,
     RxF3Eid8 = 0x12,
     RxF3Eid0 = 0x13,
+
     RxF4SidH = 0x14,
     RxF4SidL = 0x15,
     RxF4Eid8 = 0x16,
     RxF4Eid0 = 0x17,
+
     RxF5SidH = 0x18,
     RxF5SidL = 0x19,
     RxF5Eid8 = 0x1A,
     RxF5Eid0 = 0x1B,
+
+    // Error and Configuration Registers
+    Tec = 0x1C,
+    Rec = 0x1D,
+
     RxM0SidH = 0x20,
     RxM0SidL = 0x21,
     RxM0Eid8 = 0x22,
     RxM0Eid0 = 0x23,
+
     RxM1SidH = 0x24,
     RxM1SidL = 0x25,
     RxM1Eid8 = 0x26,
     RxM1Eid0 = 0x27,
-    CanStat = 0x0E,
-    CanCtrl = 0x0F,
-    Tec = 0x1C,
-    Rec = 0x1D,
+
     Cnf3 = 0x28,
     Cnf2 = 0x29,
     Cnf1 = 0x2A,
     CanInte = 0x2B,
     CanIntf = 0x2C,
     Eflg = 0x2D,
+
+    // TX Buffer 0
     TxB0Ctrl = 0x30,
     TxB0SidH = 0x31,
+    TxB0SidL = 0x32,
+    TxB0Eid8 = 0x33,
+    TxB0Eid0 = 0x34,
+    TxB0Dlc = 0x35,
+    TxB0D0 = 0x36,
+    TxB0D1 = 0x37,
+    TxB0D2 = 0x38,
+    TxB0D3 = 0x39,
+    TxB0D4 = 0x3A,
+    TxB0D5 = 0x3B,
+    TxB0D6 = 0x3C,
+    TxB0D7 = 0x3D,
+
+    // TX Buffer 1
     TxB1Ctrl = 0x40,
     TxB1SidH = 0x41,
+    TxB1SidL = 0x42,
+    TxB1Eid8 = 0x43,
+    TxB1Eid0 = 0x44,
+    TxB1Dlc = 0x45,
+    TxB1D0 = 0x46,
+    TxB1D1 = 0x47,
+    TxB1D2 = 0x48,
+    TxB1D3 = 0x49,
+    TxB1D4 = 0x4A,
+    TxB1D5 = 0x4B,
+    TxB1D6 = 0x4C,
+    TxB1D7 = 0x4D,
+
+    // TX Buffer 2
     TxB2Ctrl = 0x50,
     TxB2SidH = 0x51,
+    TxB2SidL = 0x52,
+    TxB2Eid8 = 0x53,
+    TxB2Eid0 = 0x54,
+    TxB2Dlc = 0x55,
+    TxB2D0 = 0x56,
+    TxB2D1 = 0x57,
+    TxB2D2 = 0x58,
+    TxB2D3 = 0x59,
+    TxB2D4 = 0x5A,
+    TxB2D5 = 0x5B,
+    TxB2D6 = 0x5C,
+    TxB2D7 = 0x5D,
+
+    // RX Buffer 0
     RxB0Ctrl = 0x60,
     RxB0SidH = 0x61,
+    RxB0SidL = 0x62,
+    RxB0Eid8 = 0x63,
+    RxB0Eid0 = 0x64,
+    RxB0Dlc = 0x65,
+    RxB0D0 = 0x66,
+    RxB0D1 = 0x67,
+    RxB0D2 = 0x68,
+    RxB0D3 = 0x69,
+    RxB0D4 = 0x6A,
+    RxB0D5 = 0x6B,
+    RxB0D6 = 0x6C,
+    RxB0D7 = 0x6D,
+
+    // RX Buffer 1
     RxB1Ctrl = 0x70,
     RxB1SidH = 0x71,
+    RxB1SidL = 0x72,
+    RxB1Eid8 = 0x73,
+    RxB1Eid0 = 0x74,
+    RxB1Dlc = 0x75,
+    RxB1D0 = 0x76,
+    RxB1D1 = 0x77,
+    RxB1D2 = 0x78,
+    RxB1D3 = 0x79,
+    RxB1D4 = 0x7A,
+    RxB1D5 = 0x7B,
+    RxB1D6 = 0x7C,
+    RxB1D7 = 0x7D,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
