@@ -4,6 +4,7 @@ use common::harness::TestDevice;
 use mcp2515_async::BitrateConfig;
 use mcp2515_async::can::{CAN_RTR_FLAG, CanFrame};
 use mcp2515_async::registers::{Instruction, OperationMode, Register};
+use mcp2515_async::{AcceptanceFilter, FilterMask};
 
 #[tokio::test]
 async fn reset_sends_correct_instruction() {
@@ -155,4 +156,89 @@ async fn send_sets_rtr_bit_in_dlc() {
     assert_eq!(writes[0][0], Instruction::LoadTx0 as u8);
 
     assert_eq!(writes[0][5], 0x40);
+}
+
+#[tokio::test]
+async fn set_filter_writes_standard_id_registers() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_filter(AcceptanceFilter::Rxf0, false, 0x123)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::Write as u8,
+            Register::RxF0SidH as u8,
+            0x24,
+            0x60,
+            0x00,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn set_filter_mask_writes_standard_id_registers() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_filter_mask(FilterMask::Mask0, false, 0x123)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::Write as u8,
+            Register::RxM0SidH as u8,
+            0x24,
+            0x60,
+            0x00,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn read_tec_returns_register_value() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x55]);
+
+    let tec = t.dev.read_tec().await.unwrap();
+
+    assert_eq!(tec, 0x55);
+}
+
+#[tokio::test]
+async fn read_rec_returns_register_value() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x66]);
+
+    let rec = t.dev.read_rec().await.unwrap();
+
+    assert_eq!(rec, 0x66);
+}
+
+#[tokio::test]
+async fn read_eflg_returns_register_value() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x77]);
+
+    let eflg = t.dev.read_eflg().await.unwrap();
+
+    assert_eq!(eflg, 0x77);
+}
+
+#[tokio::test]
+async fn is_bus_off_detects_bus_off_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x20]);
+
+    assert!(t.dev.is_bus_off().await.unwrap());
+}
+
+#[tokio::test]
+async fn is_bus_off_returns_false_when_flag_not_set() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x00]);
+
+    assert!(!t.dev.is_bus_off().await.unwrap());
 }
