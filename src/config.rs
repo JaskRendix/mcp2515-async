@@ -203,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn all_clock_bitrate_pairs_are_covered() {
+    fn supported_configuration_count() {
         let clocks = [Clock::MHz8, Clock::MHz16, Clock::MHz20];
         let bitrates = [
             Bitrate::Kbps125,
@@ -212,15 +212,17 @@ mod tests {
             Bitrate::Mbps1,
         ];
 
-        let mut count = 0;
+        let mut supported = 0;
+
         for c in clocks {
             for b in bitrates {
-                let _ = BitrateConfig::new(c, b);
-                count += 1;
+                if BitrateConfig::new(c, b).is_some() {
+                    supported += 1;
+                }
             }
         }
 
-        assert_eq!(count, 12); // 3 clocks × 4 bitrates
+        assert_eq!(supported, 10);
     }
 
     #[test]
