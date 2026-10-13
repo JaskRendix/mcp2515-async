@@ -109,7 +109,7 @@ where
         Ok(())
     }
 
-    /// Helper to write a 29-bit or 11-bit identifier into 4 consecutive registers (SIDH, SIDL, EID8, EID0)
+    /// Helper to write a 29-bit or 11-bit identifier into 4 consecutive registers using auto-increment write
     async fn write_id_registers(
         &mut self,
         start_reg: Register,
@@ -128,26 +128,15 @@ where
             (sidh, sidl, 0, 0)
         };
 
-        let base = start_reg as u8;
-        // Safety: register addresses are sequential and valid u8 values mapped to Register enum
-        self.set_register(unsafe { core::mem::transmute::<u8, Register>(base) }, sidh)
-            .await?;
-        self.set_register(
-            unsafe { core::mem::transmute::<u8, Register>(base + 1) },
+        let buf = [
+            Instruction::Write as u8,
+            start_reg as u8,
+            sidh,
             sidl,
-        )
-        .await?;
-        self.set_register(
-            unsafe { core::mem::transmute::<u8, Register>(base + 2) },
             eid8,
-        )
-        .await?;
-        self.set_register(
-            unsafe { core::mem::transmute::<u8, Register>(base + 3) },
             eid0,
-        )
-        .await?;
-        Ok(())
+        ];
+        self.spi.write(&buf).await.map_err(Error::Spi)
     }
 
     /// Configure an Acceptance Filter (RXF0 - RXF5)
@@ -198,7 +187,7 @@ where
                 if (txb2_ctrl & 0x08) == 0 {
                     (Instruction::LoadTx2, Instruction::RtsTx2)
                 } else {
-                    return Err(Error::Spi(unsafe { core::mem::zeroed() }));
+                    return Err(Error::NoTxBufferAvailable);
                 }
             }
         };
@@ -210,14 +199,17 @@ where
             let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
             let eid8 = (id >> 8) as u8;
             let eid0 = id as u8;
-            (sidh, sidl, eid8, eid0, (frame.can_dlc & 0x0F) | 0x40)
+            let rtr_bit = if frame.is_remote_request() { 0x40 } else { 0x00 };
+            (sidh, sidl, eid8, eid0, (frame.can_dlc & 0x0F) | rtr_bit)
         } else {
             let id = frame.standard_id() as u32;
             let sidh = (id >> 3) as u8;
             let sidl = ((id & 0x07) << 5) as u8;
-            (sidh, sidl, 0, 0, frame.can_dlc & 0x0F)
+            let rtr_bit = if frame.is_remote_request() { 0x40 } else { 0x00 };
+            (sidh, sidl, 0, 0, (frame.can_dlc & 0x0F) | rtr_bit)
         };
 
+        let dlc_len = core::cmp::min(frame.can_dlc as usize, 8);
         let mut buf = [0u8; 14];
         buf[0] = load_instr as u8;
         buf[1] = sidh;
@@ -226,7 +218,6 @@ where
         buf[4] = eid0;
         buf[5] = dlc_val;
 
-        let dlc_len = frame.can_dlc as usize;
         let mut i = 0;
         while i < dlc_len {
             buf[6 + i] = frame.data[i];
@@ -249,18 +240,19 @@ where
     pub async fn read(&mut self) -> Result<can::CanFrame, Error<E, PinE>> {
         let intf = self.read_register(Register::CanIntf).await?;
 
-        let (read_instr, int_flag_mask) = if (intf & 0x01) != 0 {
-            (Instruction::ReadRx0, 0xFE)
+        let (read_instr, clear_mask) = if (intf & 0x01) != 0 {
+            (Instruction::ReadRx0, 0x01)
         } else if (intf & 0x02) != 0 {
-            (Instruction::ReadRx1, 0xFD)
+            (Instruction::ReadRx1, 0x02)
         } else {
-            return Err(Error::Spi(unsafe { core::mem::zeroed() }));
+            return Err(Error::NoMessageAvailable);
         };
 
         let mut res = [0u8; 14];
-        let cmd = [read_instr as u8];
+        let mut tx = [0u8; 14];
+        tx[0] = read_instr as u8;
         self.spi
-            .transfer(&mut res, &cmd)
+            .transfer(&mut res, &tx)
             .await
             .map_err(Error::Spi)?;
 
@@ -272,6 +264,10 @@ where
 
         let is_extended = (sidl & 0x08) != 0;
         let dlc = dlc_byte & 0x0F;
+
+        if dlc > 8 {
+            return Err(Error::InvalidDlc);
+        }
 
         let can_id = if is_extended {
             let raw_id = ((sidh as u32) << 21)
@@ -291,11 +287,13 @@ where
             i += 1;
         }
 
-        self.modify_register(Register::CanIntf, !int_flag_mask, 0)
+        let frame = can::CanFrame::new(can_id, &data[..dlc as usize])
+            .ok_or(Error::InvalidFrame)?;
+
+        self.modify_register(Register::CanIntf, clear_mask, 0)
             .await?;
 
-        can::CanFrame::new(can_id, &data[..dlc as usize])
-            .ok_or_else(|| Error::Spi(unsafe { core::mem::zeroed() }))
+        Ok(frame)
     }
 
     /// Read the Transmit Error Counter (TEC).
