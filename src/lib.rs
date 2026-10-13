@@ -199,13 +199,21 @@ where
             let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
             let eid8 = (id >> 8) as u8;
             let eid0 = id as u8;
-            let rtr_bit = if frame.is_remote_request() { 0x40 } else { 0x00 };
+            let rtr_bit = if frame.is_remote_request() {
+                0x40
+            } else {
+                0x00
+            };
             (sidh, sidl, eid8, eid0, (frame.can_dlc & 0x0F) | rtr_bit)
         } else {
             let id = frame.standard_id() as u32;
             let sidh = (id >> 3) as u8;
             let sidl = ((id & 0x07) << 5) as u8;
-            let rtr_bit = if frame.is_remote_request() { 0x40 } else { 0x00 };
+            let rtr_bit = if frame.is_remote_request() {
+                0x40
+            } else {
+                0x00
+            };
             (sidh, sidl, 0, 0, (frame.can_dlc & 0x0F) | rtr_bit)
         };
 
