@@ -54,8 +54,14 @@ where
 
     /// Asynchronously wait for an interrupt signal, then read the incoming frame.
     pub async fn recv(&mut self) -> Result<can::CanFrame, Error<E, PinE>> {
-        self.wait_for_interrupt().await?;
-        self.read().await
+        loop {
+            self.wait_for_interrupt().await?;
+
+            match self.read().await {
+                Err(Error::NoMessageAvailable) => continue,
+                result => return result,
+            }
+        }
     }
 }
 
@@ -169,6 +175,10 @@ where
     }
 
     pub async fn send(&mut self, frame: &can::CanFrame) -> Result<(), Error<E, PinE>> {
+        if frame.can_dlc > 8 {
+            return Err(Error::InvalidDlc);
+        }
+
         let txb0_ctrl = self.read_register(Register::TxB0Ctrl).await?;
         let (load_instr, rts_instr) = if (txb0_ctrl & 0x08) == 0 {
             (Instruction::LoadTx0, Instruction::RtsTx0)
@@ -186,22 +196,28 @@ where
             }
         };
 
+        let mut dlc_val = frame.can_dlc & 0x0F;
+
+        if frame.is_rtr() {
+            dlc_val |= 0x40;
+        }
+
         let is_ext = frame.is_extended();
-        let (sidh, sidl, eid8, eid0, dlc_val) = if is_ext {
+        let (sidh, sidl, eid8, eid0) = if is_ext {
             let id = frame.extended_id();
             let sidh = (id >> 21) as u8;
             let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
             let eid8 = (id >> 8) as u8;
             let eid0 = id as u8;
-            (sidh, sidl, eid8, eid0, frame.can_dlc & 0x0F)
+            (sidh, sidl, eid8, eid0)
         } else {
             let id = frame.standard_id() as u32;
             let sidh = (id >> 3) as u8;
             let sidl = ((id & 0x07) << 5) as u8;
-            (sidh, sidl, 0, 0, frame.can_dlc & 0x0F)
+            (sidh, sidl, 0, 0)
         };
 
-        let dlc_len = core::cmp::min(frame.can_dlc as usize, 8);
+        let dlc_len = frame.can_dlc as usize;
         let mut buf = [0u8; 14];
         buf[0] = load_instr as u8;
         buf[1] = sidh;
@@ -250,6 +266,7 @@ where
         let eid0 = res[4];
         let dlc_byte = res[5];
 
+        let is_rtr = (dlc_byte & 0x40) != 0;
         let is_extended = (sidl & 0x08) != 0;
         let dlc = dlc_byte & 0x0F;
 
@@ -268,6 +285,12 @@ where
             ((sidh as u32) << 3) | ((sidl as u32) >> 5)
         };
 
+        let can_id = if is_rtr {
+            can_id | can::CAN_RTR_FLAG
+        } else {
+            can_id
+        };
+
         let mut data = [0u8; 8];
         let mut i = 0;
         while i < dlc as usize && i < 8 {
@@ -275,7 +298,8 @@ where
             i += 1;
         }
 
-        let frame = can::CanFrame::new(can_id, &data[..dlc as usize]).ok_or(Error::InvalidFrame)?;
+        let frame =
+            can::CanFrame::new(can_id, &data[..dlc as usize]).map_err(|_| Error::InvalidFrame)?;
 
         self.modify_register(Register::CanIntf, clear_mask, 0)
             .await?;
