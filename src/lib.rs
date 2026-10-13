@@ -78,7 +78,17 @@ where
 
     pub async fn set_mode(&mut self, mode: OperationMode) -> Result<(), Error<E, PinE>> {
         self.modify_register(Register::CanCtrl, 0xE0, mode as u8)
-            .await
+            .await?;
+
+        for _ in 0..100 {
+            let stat = self.read_register(Register::CanStat).await?;
+
+            if (stat & 0xE0) == (mode as u8) {
+                return Ok(());
+            }
+        }
+
+        Err(Error::ModeChangeTimeout)
     }
 
     pub async fn read_register(&mut self, reg: Register) -> Result<u8, Error<E, PinE>> {

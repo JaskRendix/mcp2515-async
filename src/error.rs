@@ -6,4 +6,5 @@ pub enum Error<E, PinE = core::convert::Infallible> {
     NoMessageAvailable,
     InvalidDlc,
     InvalidFrame,
+    ModeChangeTimeout,
 }
