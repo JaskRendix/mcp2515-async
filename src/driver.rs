@@ -601,4 +601,96 @@ where
         self.modify_register(Register::RxB0Ctrl, 0x04, 0x00)
             .await
     }
+
+    pub async fn read_status(&mut self) -> Result<u8, Error<E, PinE>> {
+        let tx = [0xA0, 0x00];
+        let mut rx = [0u8; 2];
+
+        self.spi
+            .transfer(&mut rx, &tx)
+            .await
+            .map_err(Error::Spi)?;
+
+        Ok(rx[1])
+    }
+
+    pub async fn message_available(&mut self) -> Result<bool, Error<E, PinE>> {
+        let status = self.read_status().await?;
+        Ok((status & 0x03) != 0)
+    }
+
+    pub async fn rx_status(&mut self) -> Result<u8, Error<E, PinE>> {
+        let tx = [0xB0, 0x00];
+        let mut rx = [0u8; 2];
+
+        self.spi
+            .transfer(&mut rx, &tx)
+            .await
+            .map_err(Error::Spi)?;
+
+        Ok(rx[1])
+    }
+
+    pub async fn read_registers(
+        &mut self,
+        start: Register,
+        data: &mut [u8],
+    ) -> Result<(), Error<E, PinE>> {
+        if data.len() > 62 {
+            return Err(Error::InvalidFrame);
+        }
+
+        let mut tx = [0u8; 64];
+        let mut rx = [0u8; 64];
+
+        tx[0] = Instruction::Read as u8;
+        tx[1] = start as u8;
+
+        self.spi
+            .transfer(&mut rx[..data.len() + 2], &tx[..data.len() + 2])
+            .await
+            .map_err(Error::Spi)?;
+
+        data.copy_from_slice(&rx[2..data.len() + 2]);
+
+        Ok(())
+    }
+
+    pub async fn write_registers(
+        &mut self,
+        start: Register,
+        data: &[u8],
+    ) -> Result<(), Error<E, PinE>> {
+        if data.len() > 62 {
+            return Err(Error::InvalidFrame);
+        }
+
+        let mut buf = [0u8; 64];
+
+        buf[0] = Instruction::Write as u8;
+        buf[1] = start as u8;
+
+        let len = data.len();
+        buf[2..2 + len].copy_from_slice(data);
+
+        self.spi
+            .write(&buf[..len + 2])
+            .await
+            .map_err(Error::Spi)
+    }
+
+    pub async fn rollover_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::RxB0Ctrl).await?;
+        Ok((ctrl & 0x04) != 0)
+    }
+
+    pub async fn clkout_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::CanCtrl).await?;
+        Ok((ctrl & 0x04) != 0)
+    }
+
+    pub async fn interrupt_code(&mut self) -> Result<u8, Error<E, PinE>> {
+        let stat = self.read_register(Register::CanStat).await?;
+        Ok((stat >> 1) & 0x07)
+    }
 }
