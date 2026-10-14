@@ -14,6 +14,15 @@ pub enum Bitrate {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum TxPriority {
+    Lowest = 0b00,
+    Low = 0b01,
+    High = 0b10,
+    Highest = 0b11,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BitrateConfig {
     pub cnf1: u8,
     pub cnf2: u8,
