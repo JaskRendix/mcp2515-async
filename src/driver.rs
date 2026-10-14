@@ -374,4 +374,37 @@ where
         let eflg = self.read_eflg().await?;
         Ok((eflg & 0x10) != 0)
     }
+
+    pub async fn read_interrupt_flags(&mut self) -> Result<u8, Error<E, PinE>> {
+        self.read_register(Register::CanIntf).await
+    }
+
+    pub async fn read_interrupt_enable(&mut self) -> Result<u8, Error<E, PinE>> {
+        self.read_register(Register::CanInte).await
+    }
+
+    pub async fn rx0_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & 0x01) != 0)
+    }
+
+    pub async fn rx1_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & 0x02) != 0)
+    }
+
+    pub async fn error_interrupt_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & 0x20) != 0)
+    }
+
+    pub async fn enable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x03, 0x03)
+            .await
+    }
+
+    pub async fn disable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x03, 0x00)
+            .await
+    }
 }
