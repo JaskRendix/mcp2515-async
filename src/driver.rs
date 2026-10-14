@@ -399,12 +399,10 @@ where
     }
 
     pub async fn enable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, 0x03, 0x03)
-            .await
+        self.modify_register(Register::CanInte, 0x03, 0x03).await
     }
 
     pub async fn disable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, 0x03, 0x00)
-            .await
+        self.modify_register(Register::CanInte, 0x03, 0x00).await
     }
 }
