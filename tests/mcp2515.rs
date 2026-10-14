@@ -422,12 +422,7 @@ async fn enable_wakeup_filter_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Cnf3 as u8,
-            0x40,
-            0x40,
-        ]
+        vec![Instruction::BitMod as u8, Register::Cnf3 as u8, 0x40, 0x40,]
     );
 }
 
@@ -439,12 +434,7 @@ async fn disable_wakeup_filter_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Cnf3 as u8,
-            0x40,
-            0x00,
-        ]
+        vec![Instruction::BitMod as u8, Register::Cnf3 as u8, 0x40, 0x00,]
     );
 }
 
@@ -456,12 +446,7 @@ async fn enable_start_of_frame_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Cnf3 as u8,
-            0x80,
-            0x80,
-        ]
+        vec![Instruction::BitMod as u8, Register::Cnf3 as u8, 0x80, 0x80,]
     );
 }
 
@@ -473,12 +458,7 @@ async fn disable_start_of_frame_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Cnf3 as u8,
-            0x80,
-            0x00,
-        ]
+        vec![Instruction::BitMod as u8, Register::Cnf3 as u8, 0x80, 0x00,]
     );
 }
 
@@ -490,12 +470,7 @@ async fn clear_rx0_overflow_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Eflg as u8,
-            0x40,
-            0x00,
-        ]
+        vec![Instruction::BitMod as u8, Register::Eflg as u8, 0x40, 0x00,]
     );
 }
 
@@ -507,12 +482,7 @@ async fn clear_overflows_writes_correct_mask() {
 
     assert_eq!(
         t.spi.writes()[0],
-        vec![
-            Instruction::BitMod as u8,
-            Register::Eflg as u8,
-            0xC0,
-            0x00,
-        ]
+        vec![Instruction::BitMod as u8, Register::Eflg as u8, 0xC0, 0x00,]
     );
 }
 
@@ -576,7 +546,12 @@ async fn read_registers_rejects_large_buffer() {
 
     let mut buf = [0u8; 63];
 
-    assert!(t.dev.read_registers(Register::CanCtrl, &mut buf).await.is_err());
+    assert!(
+        t.dev
+            .read_registers(Register::CanCtrl, &mut buf)
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]
@@ -585,7 +560,13 @@ async fn write_registers_rejects_large_buffer() {
 
     let buf = [0u8; 63];
 
-    assert!(t.dev.write_registers(Register::CanCtrl, &buf).await.is_err());
+    assert!(
+        t.dev
+            .write_registers(Register::CanCtrl, &buf)
+            .await
+            .is_err()
+    );
+
 }
 
 #[tokio::test]
@@ -613,10 +594,7 @@ async fn clkout_enabled_detects_bit() {
 async fn set_tx0_priority_lowest() {
     let mut t = TestDevice::new();
 
-    t.dev
-        .set_tx0_priority(TxPriority::Lowest)
-        .await
-        .unwrap();
+    t.dev.set_tx0_priority(TxPriority::Lowest).await.unwrap();
 
     assert_eq!(
         t.spi.writes()[0],
@@ -633,10 +611,7 @@ async fn set_tx0_priority_lowest() {
 async fn set_tx0_priority_highest() {
     let mut t = TestDevice::new();
 
-    t.dev
-        .set_tx0_priority(TxPriority::Highest)
-        .await
-        .unwrap();
+    t.dev.set_tx0_priority(TxPriority::Highest).await.unwrap();
 
     assert_eq!(
         t.spi.writes()[0],
@@ -653,10 +628,7 @@ async fn set_tx0_priority_highest() {
 async fn set_tx1_priority_high() {
     let mut t = TestDevice::new();
 
-    t.dev
-        .set_tx1_priority(TxPriority::High)
-        .await
-        .unwrap();
+    t.dev.set_tx1_priority(TxPriority::High).await.unwrap();
 
     assert_eq!(
         t.spi.writes()[0],
@@ -673,10 +645,7 @@ async fn set_tx1_priority_high() {
 async fn set_tx2_priority_low() {
     let mut t = TestDevice::new();
 
-    t.dev
-        .set_tx2_priority(TxPriority::Low)
-        .await
-        .unwrap();
+    t.dev.set_tx2_priority(TxPriority::Low).await.unwrap();
 
     assert_eq!(
         t.spi.writes()[0],
