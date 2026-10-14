@@ -467,4 +467,138 @@ where
     pub async fn clear_overflows(&mut self) -> Result<(), Error<E, PinE>> {
         self.modify_register(Register::Eflg, 0xC0, 0).await
     }
+
+    pub async fn tx0_busy(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB0Ctrl).await?;
+        Ok((ctrl & 0x08) != 0)
+    }
+
+    pub async fn tx1_busy(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB1Ctrl).await?;
+        Ok((ctrl & 0x08) != 0)
+    }
+
+    pub async fn tx2_busy(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB2Ctrl).await?;
+        Ok((ctrl & 0x08) != 0)
+    }
+
+    pub async fn tx0_error(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB0Ctrl).await?;
+        Ok((ctrl & 0x10) != 0)
+    }
+
+    pub async fn tx1_error(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB1Ctrl).await?;
+        Ok((ctrl & 0x10) != 0)
+    }
+
+    pub async fn tx2_error(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB2Ctrl).await?;
+        Ok((ctrl & 0x10) != 0)
+    }
+
+    pub async fn tx0_lost_arbitration(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB0Ctrl).await?;
+        Ok((ctrl & 0x20) != 0)
+    }
+
+    pub async fn tx1_lost_arbitration(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB1Ctrl).await?;
+        Ok((ctrl & 0x20) != 0)
+    }
+
+    pub async fn tx2_lost_arbitration(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB2Ctrl).await?;
+        Ok((ctrl & 0x20) != 0)
+    }
+
+    pub async fn tx0_aborted(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB0Ctrl).await?;
+        Ok((ctrl & 0x40) != 0)
+    }
+
+    pub async fn tx1_aborted(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB1Ctrl).await?;
+        Ok((ctrl & 0x40) != 0)
+    }
+
+    pub async fn tx2_aborted(&mut self) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::TxB2Ctrl).await?;
+        Ok((ctrl & 0x40) != 0)
+    }
+
+    pub async fn abort_all_transmissions(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x10, 0x10).await?;
+        self.modify_register(Register::CanCtrl, 0x10, 0x00).await
+    }
+
+    pub async fn enable_one_shot(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x08, 0x08)
+            .await
+    }
+
+    pub async fn disable_one_shot(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x08, 0x00)
+            .await
+    }
+
+    pub async fn is_one_shot_enabled(
+        &mut self,
+    ) -> Result<bool, Error<E, PinE>> {
+        let ctrl = self.read_register(Register::CanCtrl).await?;
+        Ok((ctrl & 0x08) != 0)
+    }
+
+    pub async fn enable_clkout(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x04, 0x04)
+            .await
+    }
+
+    pub async fn disable_clkout(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x04, 0x00)
+            .await
+    }
+
+    pub async fn set_clkout_div1(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x03, 0x00)
+            .await
+    }
+
+    pub async fn set_clkout_div2(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x03, 0x01)
+            .await
+    }
+
+    pub async fn set_clkout_div4(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x03, 0x02)
+            .await
+    }
+
+    pub async fn set_clkout_div8(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x03, 0x03)
+            .await
+    }
+
+    pub async fn enable_rollover(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::RxB0Ctrl, 0x04, 0x04)
+            .await
+    }
+
+    pub async fn disable_rollover(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::RxB0Ctrl, 0x04, 0x00)
+            .await
+    }
 }
