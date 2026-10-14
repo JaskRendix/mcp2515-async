@@ -34,9 +34,7 @@ impl CanFrame {
         }
 
         if is_extended
-            && (can_id
-                & !(CAN_EFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG))
-                != 0
+            && (can_id & !(CAN_EFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0
         {
             return Err(FrameError::InvalidExtendedId);
         }
