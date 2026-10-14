@@ -53,3 +53,41 @@ fn reject_dlc_greater_than_8() {
 fn reject_invalid_standard_id() {
     assert!(CanFrame::new(0xFFFF, &[1]).is_err());
 }
+
+#[test]
+fn accept_max_extended_id() {
+    let id = CAN_EFF_FLAG | 0x1FFF_FFFF;
+    let f = CanFrame::new(id, &[1]).unwrap();
+
+    assert!(f.is_extended());
+    assert_eq!(f.extended_id(), 0x1FFF_FFFF);
+}
+
+#[test]
+fn error_flag_detected() {
+    let id = CAN_ERR_FLAG | 0x123;
+    let f = CanFrame::new(id, &[]).unwrap();
+
+    assert!(f.is_error());
+}
+
+#[test]
+fn accept_max_standard_id() {
+    let f = CanFrame::new(0x7FF, &[0]).unwrap();
+    assert_eq!(f.standard_id(), 0x7FF);
+}
+
+#[test]
+fn id_returns_extended_id() {
+    let id = CAN_EFF_FLAG | 0x123456;
+    let f = CanFrame::new(id, &[0]).unwrap();
+
+    assert_eq!(f.id(), 0x123456);
+}
+
+#[test]
+fn id_returns_standard_id() {
+    let f = CanFrame::new(0x456, &[0]).unwrap();
+
+    assert_eq!(f.id(), 0x456);
+}
