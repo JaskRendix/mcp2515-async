@@ -349,4 +349,29 @@ where
         let eflg = self.read_eflg().await?;
         Ok((eflg & 0x20) != 0)
     }
+
+    pub async fn is_error_warning(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x01) != 0)
+    }
+
+    pub async fn is_rx_warning(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x02) != 0)
+    }
+
+    pub async fn is_tx_warning(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x04) != 0)
+    }
+
+    pub async fn is_rx_error_passive(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x08) != 0)
+    }
+
+    pub async fn is_tx_error_passive(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x10) != 0)
+    }
 }
