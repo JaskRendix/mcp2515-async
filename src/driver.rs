@@ -533,73 +533,51 @@ where
         self.modify_register(Register::CanCtrl, 0x10, 0x00).await
     }
 
-    pub async fn enable_one_shot(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
+    pub async fn enable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
         self.modify_register(Register::CanCtrl, 0x08, 0x08)
             .await
     }
 
-    pub async fn disable_one_shot(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
+    pub async fn disable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
         self.modify_register(Register::CanCtrl, 0x08, 0x00)
             .await
     }
 
-    pub async fn is_one_shot_enabled(
-        &mut self,
-    ) -> Result<bool, Error<E, PinE>> {
+    pub async fn is_one_shot_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
         let ctrl = self.read_register(Register::CanCtrl).await?;
         Ok((ctrl & 0x08) != 0)
     }
 
-    pub async fn enable_clkout(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x04, 0x04)
-            .await
+    pub async fn enable_clkout(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x04, 0x04).await
     }
 
-    pub async fn disable_clkout(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x04, 0x00)
-            .await
+    pub async fn disable_clkout(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanCtrl, 0x04, 0x00).await
     }
 
     pub async fn set_clkout_div1(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x03, 0x00)
-            .await
+        self.modify_register(Register::CanCtrl, 0x03, 0x00).await
     }
 
     pub async fn set_clkout_div2(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x03, 0x01)
-            .await
+        self.modify_register(Register::CanCtrl, 0x03, 0x01).await
     }
 
     pub async fn set_clkout_div4(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x03, 0x02)
-            .await
+        self.modify_register(Register::CanCtrl, 0x03, 0x02).await
     }
 
     pub async fn set_clkout_div8(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x03, 0x03)
-            .await
+        self.modify_register(Register::CanCtrl, 0x03, 0x03).await
     }
 
-    pub async fn enable_rollover(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::RxB0Ctrl, 0x04, 0x04)
-            .await
+    pub async fn enable_rollover(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::RxB0Ctrl, 0x04, 0x04).await
     }
 
-    pub async fn disable_rollover(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::RxB0Ctrl, 0x04, 0x00)
-            .await
+    pub async fn disable_rollover(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::RxB0Ctrl, 0x04, 0x00).await
     }
 
     pub async fn read_status(&mut self) -> Result<u8, Error<E, PinE>> {
@@ -692,5 +670,31 @@ where
     pub async fn interrupt_code(&mut self) -> Result<u8, Error<E, PinE>> {
         let stat = self.read_register(Register::CanStat).await?;
         Ok((stat >> 1) & 0x07)
+    }
+
+    pub async fn enable_wakeup_filter(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Cnf3, 0x40, 0x40).await
+    }
+
+    pub async fn disable_wakeup_filter(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Cnf3, 0x40, 0x00).await
+    }
+
+    pub async fn enable_start_of_frame(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Cnf3, 0x80, 0x80).await
+    }
+
+    pub async fn disable_start_of_frame(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Cnf3, 0x80, 0x00).await
+    }
+
+    pub async fn wakeup_filter_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
+        let cnf3 = self.read_register(Register::Cnf3).await?;
+        Ok((cnf3 & 0x40) != 0)
+    }
+    
+    pub async fn start_of_frame_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
+        let cnf3 = self.read_register(Register::Cnf3).await?;
+        Ok((cnf3 & 0x80) != 0)
     }
 }
