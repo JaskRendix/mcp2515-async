@@ -341,24 +341,15 @@ where
         self.modify_register(reg, 0x03, priority as u8).await
     }
 
-    pub async fn set_tx0_priority(
-        &mut self,
-        priority: TxPriority,
-    ) -> Result<(), Error<E, PinE>> {
+    pub async fn set_tx0_priority(&mut self, priority: TxPriority) -> Result<(), Error<E, PinE>> {
         self.set_tx_priority(Register::TxB0Ctrl, priority).await
     }
 
-    pub async fn set_tx1_priority(
-        &mut self,
-        priority: TxPriority,
-    ) -> Result<(), Error<E, PinE>> {
+    pub async fn set_tx1_priority(&mut self, priority: TxPriority) -> Result<(), Error<E, PinE>> {
         self.set_tx_priority(Register::TxB1Ctrl, priority).await
     }
 
-    pub async fn set_tx2_priority(
-        &mut self,
-        priority: TxPriority,
-    ) -> Result<(), Error<E, PinE>> {
+    pub async fn set_tx2_priority(&mut self, priority: TxPriority) -> Result<(), Error<E, PinE>> {
         self.set_tx_priority(Register::TxB2Ctrl, priority).await
     }
 
