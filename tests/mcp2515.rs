@@ -566,7 +566,6 @@ async fn write_registers_rejects_large_buffer() {
             .await
             .is_err()
     );
-
 }
 
 #[tokio::test]
