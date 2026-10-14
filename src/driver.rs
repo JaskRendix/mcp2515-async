@@ -534,13 +534,11 @@ where
     }
 
     pub async fn enable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x08, 0x08)
-            .await
+        self.modify_register(Register::CanCtrl, 0x08, 0x08).await
     }
 
     pub async fn disable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, 0x08, 0x00)
-            .await
+        self.modify_register(Register::CanCtrl, 0x08, 0x00).await
     }
 
     pub async fn is_one_shot_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -584,10 +582,7 @@ where
         let tx = [0xA0, 0x00];
         let mut rx = [0u8; 2];
 
-        self.spi
-            .transfer(&mut rx, &tx)
-            .await
-            .map_err(Error::Spi)?;
+        self.spi.transfer(&mut rx, &tx).await.map_err(Error::Spi)?;
 
         Ok(rx[1])
     }
@@ -601,10 +596,7 @@ where
         let tx = [0xB0, 0x00];
         let mut rx = [0u8; 2];
 
-        self.spi
-            .transfer(&mut rx, &tx)
-            .await
-            .map_err(Error::Spi)?;
+        self.spi.transfer(&mut rx, &tx).await.map_err(Error::Spi)?;
 
         Ok(rx[1])
     }
@@ -651,10 +643,7 @@ where
         let len = data.len();
         buf[2..2 + len].copy_from_slice(data);
 
-        self.spi
-            .write(&buf[..len + 2])
-            .await
-            .map_err(Error::Spi)
+        self.spi.write(&buf[..len + 2]).await.map_err(Error::Spi)
     }
 
     pub async fn rollover_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -692,7 +681,7 @@ where
         let cnf3 = self.read_register(Register::Cnf3).await?;
         Ok((cnf3 & 0x40) != 0)
     }
-    
+
     pub async fn start_of_frame_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
         let cnf3 = self.read_register(Register::Cnf3).await?;
         Ok((cnf3 & 0x80) != 0)
