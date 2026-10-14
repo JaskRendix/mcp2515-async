@@ -33,12 +33,6 @@ impl CanFrame {
             return Err(FrameError::InvalidStandardId);
         }
 
-        if is_extended
-            && (can_id & !(CAN_EFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0
-        {
-            return Err(FrameError::InvalidExtendedId);
-        }
-
         let mut d = [0u8; 8];
         let mut i = 0;
 
