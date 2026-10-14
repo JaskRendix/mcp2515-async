@@ -4,7 +4,7 @@ use common::harness::TestDevice;
 use mcp2515_async::BitrateConfig;
 use mcp2515_async::can::{CAN_RTR_FLAG, CanFrame};
 use mcp2515_async::registers::{Instruction, OperationMode, Register};
-use mcp2515_async::{AcceptanceFilter, FilterMask};
+use mcp2515_async::{AcceptanceFilter, FilterMask, TxPriority};
 
 #[tokio::test]
 async fn reset_sends_correct_instruction() {
@@ -607,4 +607,84 @@ async fn clkout_enabled_detects_bit() {
     let mut t = TestDevice::with_transfer_output(&[0, 0, 0x04]);
 
     assert!(t.dev.clkout_enabled().await.unwrap());
+}
+
+#[tokio::test]
+async fn set_tx0_priority_lowest() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_tx0_priority(TxPriority::Lowest)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::TxB0Ctrl as u8,
+            0x03,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn set_tx0_priority_highest() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_tx0_priority(TxPriority::Highest)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::TxB0Ctrl as u8,
+            0x03,
+            0x03,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn set_tx1_priority_high() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_tx1_priority(TxPriority::High)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::TxB1Ctrl as u8,
+            0x03,
+            0x02,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn set_tx2_priority_low() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_tx2_priority(TxPriority::Low)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::TxB2Ctrl as u8,
+            0x03,
+            0x01,
+        ]
+    );
 }
