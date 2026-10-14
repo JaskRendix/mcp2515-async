@@ -161,6 +161,14 @@ where
             AcceptanceFilter::Rxf5 => Register::RxF5SidH,
         };
 
+        if !is_extended && id > 0x7FF {
+            return Err(Error::InvalidFrame);
+        }
+
+        if is_extended && id > 0x1FFF_FFFF {
+            return Err(Error::InvalidFrame);
+        }
+
         self.write_id_registers(base_reg, is_extended, id).await
     }
 
@@ -174,6 +182,14 @@ where
             FilterMask::Mask0 => Register::RxM0SidH,
             FilterMask::Mask1 => Register::RxM1SidH,
         };
+
+        if !is_extended && id > 0x7FF {
+            return Err(Error::InvalidFrame);
+        }
+
+        if is_extended && id > 0x1FFF_FFFF {
+            return Err(Error::InvalidFrame);
+        }
 
         self.write_id_registers(base_reg, is_extended, id).await
     }
@@ -270,8 +286,14 @@ where
         let eid0 = res[4];
         let dlc_byte = res[5];
 
-        let is_rtr = (dlc_byte & 0x40) != 0;
         let is_extended = (sidl & 0x08) != 0;
+
+        let is_rtr = if is_extended {
+            (dlc_byte & 0x40) != 0
+        } else {
+            (sidl & 0x10) != 0
+        };
+
         let dlc = dlc_byte & 0x0F;
 
         if dlc > 8 {
