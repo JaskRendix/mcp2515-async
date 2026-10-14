@@ -6,6 +6,6 @@ pub mod driver;
 pub mod error;
 pub mod registers;
 
-pub use config::{AcceptanceFilter, Bitrate, BitrateConfig, Clock, FilterMask};
+pub use config::{AcceptanceFilter, Bitrate, BitrateConfig, Clock, FilterMask, TxPriority};
 
 pub use driver::Mcp2515;
