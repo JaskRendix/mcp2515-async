@@ -405,4 +405,66 @@ where
     pub async fn disable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
         self.modify_register(Register::CanInte, 0x03, 0x00).await
     }
+
+    pub async fn clear_rx0_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanIntf, 0x01, 0).await
+    }
+
+    pub async fn clear_rx1_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanIntf, 0x02, 0).await
+    }
+
+    pub async fn clear_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanIntf, 0x20, 0).await
+    }
+
+    pub async fn clear_interrupt_flags(&mut self) -> Result<(), Error<E, PinE>> {
+        self.set_register(Register::CanIntf, 0x00).await
+    }
+
+    pub async fn enable_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x20, 0x20).await
+    }
+
+    pub async fn disable_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x20, 0x00).await
+    }
+
+    pub async fn enable_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x40, 0x40).await
+    }
+
+    pub async fn disable_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x40, 0x00).await
+    }
+
+    pub async fn enable_tx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x1C, 0x1C).await
+    }
+
+    pub async fn disable_tx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, 0x1C, 0x00).await
+    }
+
+    pub async fn rx0_overflowed(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x40) != 0)
+    }
+
+    pub async fn rx1_overflowed(&mut self) -> Result<bool, Error<E, PinE>> {
+        let eflg = self.read_eflg().await?;
+        Ok((eflg & 0x80) != 0)
+    }
+
+    pub async fn clear_rx0_overflow(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Eflg, 0x40, 0).await
+    }
+
+    pub async fn clear_rx1_overflow(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Eflg, 0x80, 0).await
+    }
+
+    pub async fn clear_overflows(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::Eflg, 0xC0, 0).await
+    }
 }
