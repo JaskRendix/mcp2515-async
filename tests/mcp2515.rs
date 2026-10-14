@@ -242,3 +242,369 @@ async fn is_bus_off_returns_false_when_flag_not_set() {
 
     assert!(!t.dev.is_bus_off().await.unwrap());
 }
+
+#[tokio::test]
+async fn rx0_pending_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x01]);
+
+    assert!(t.dev.rx0_pending().await.unwrap());
+}
+
+#[tokio::test]
+async fn rx1_pending_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x02]);
+
+    assert!(t.dev.rx1_pending().await.unwrap());
+}
+
+#[tokio::test]
+async fn error_interrupt_pending_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x20]);
+
+    assert!(t.dev.error_interrupt_pending().await.unwrap());
+}
+
+#[tokio::test]
+async fn is_error_warning_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x01]);
+
+    assert!(t.dev.is_error_warning().await.unwrap());
+}
+
+#[tokio::test]
+async fn is_rx_warning_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x02]);
+
+    assert!(t.dev.is_rx_warning().await.unwrap());
+}
+
+#[tokio::test]
+async fn is_tx_warning_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x04]);
+
+    assert!(t.dev.is_tx_warning().await.unwrap());
+}
+
+#[tokio::test]
+async fn rx0_overflow_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x40]);
+
+    assert!(t.dev.rx0_overflowed().await.unwrap());
+}
+
+#[tokio::test]
+async fn rx1_overflow_detects_flag() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x80]);
+
+    assert!(t.dev.rx1_overflowed().await.unwrap());
+}
+
+#[tokio::test]
+async fn read_status_returns_status_byte() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0x03]);
+
+    let status = t.dev.read_status().await.unwrap();
+
+    assert_eq!(status, 0x03);
+}
+
+#[tokio::test]
+async fn rx_status_returns_status_byte() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0xAA]);
+
+    let status = t.dev.rx_status().await.unwrap();
+
+    assert_eq!(status, 0xAA);
+}
+
+#[tokio::test]
+async fn enable_one_shot_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.enable_one_shot().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::CanCtrl as u8,
+            0x08,
+            0x08,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn enable_rollover_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.enable_rollover().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::RxB0Ctrl as u8,
+            0x04,
+            0x04,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn read_registers_reads_multiple_bytes() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x11, 0x22, 0x33]);
+
+    let mut data = [0u8; 3];
+    t.dev
+        .read_registers(Register::CanCtrl, &mut data)
+        .await
+        .unwrap();
+
+    assert_eq!(data, [0x11, 0x22, 0x33]);
+}
+
+#[tokio::test]
+async fn write_registers_writes_multiple_bytes() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .write_registers(Register::CanCtrl, &[0x11, 0x22, 0x33])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::Write as u8,
+            Register::CanCtrl as u8,
+            0x11,
+            0x22,
+            0x33,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn abort_all_transmissions_sets_and_clears_abat() {
+    let mut t = TestDevice::new();
+
+    t.dev.abort_all_transmissions().await.unwrap();
+
+    let writes = t.spi.writes();
+
+    assert_eq!(
+        writes[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::CanCtrl as u8,
+            0x10,
+            0x10,
+        ]
+    );
+
+    assert_eq!(
+        writes[1],
+        vec![
+            Instruction::BitMod as u8,
+            Register::CanCtrl as u8,
+            0x10,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn enable_wakeup_filter_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.enable_wakeup_filter().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Cnf3 as u8,
+            0x40,
+            0x40,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn disable_wakeup_filter_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.disable_wakeup_filter().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Cnf3 as u8,
+            0x40,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn enable_start_of_frame_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.enable_start_of_frame().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Cnf3 as u8,
+            0x80,
+            0x80,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn disable_start_of_frame_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.disable_start_of_frame().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Cnf3 as u8,
+            0x80,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn clear_rx0_overflow_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.clear_rx0_overflow().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Eflg as u8,
+            0x40,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn clear_overflows_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.clear_overflows().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::Eflg as u8,
+            0xC0,
+            0x00,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn enable_clkout_writes_correct_mask() {
+    let mut t = TestDevice::new();
+
+    t.dev.enable_clkout().await.unwrap();
+
+    assert_eq!(
+        t.spi.writes()[0],
+        vec![
+            Instruction::BitMod as u8,
+            Register::CanCtrl as u8,
+            0x04,
+            0x04,
+        ]
+    );
+}
+
+#[tokio::test]
+async fn interrupt_code_extracts_icod_bits() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0b0000_1010]);
+
+    let code = t.dev.interrupt_code().await.unwrap();
+
+    assert_eq!(code, 0b101);
+}
+
+#[tokio::test]
+async fn tx0_busy_detects_txreq() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x08]);
+
+    assert!(t.dev.tx0_busy().await.unwrap());
+}
+
+#[tokio::test]
+async fn tx0_error_detects_txerr() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x10]);
+
+    assert!(t.dev.tx0_error().await.unwrap());
+}
+
+#[tokio::test]
+async fn tx0_lost_arbitration_detects_mloa() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x20]);
+
+    assert!(t.dev.tx0_lost_arbitration().await.unwrap());
+}
+
+#[tokio::test]
+async fn tx0_aborted_detects_abtf() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x40]);
+
+    assert!(t.dev.tx0_aborted().await.unwrap());
+}
+
+#[tokio::test]
+async fn read_registers_rejects_large_buffer() {
+    let mut t = TestDevice::new();
+
+    let mut buf = [0u8; 63];
+
+    assert!(t.dev.read_registers(Register::CanCtrl, &mut buf).await.is_err());
+}
+
+#[tokio::test]
+async fn write_registers_rejects_large_buffer() {
+    let mut t = TestDevice::new();
+
+    let buf = [0u8; 63];
+
+    assert!(t.dev.write_registers(Register::CanCtrl, &buf).await.is_err());
+}
+
+#[tokio::test]
+async fn one_shot_enabled_detects_bit() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x08]);
+
+    assert!(t.dev.is_one_shot_enabled().await.unwrap());
+}
+
+#[tokio::test]
+async fn rollover_enabled_detects_bit() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x04]);
+
+    assert!(t.dev.rollover_enabled().await.unwrap());
+}
+
+#[tokio::test]
+async fn clkout_enabled_detects_bit() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x04]);
+
+    assert!(t.dev.clkout_enabled().await.unwrap());
+}
