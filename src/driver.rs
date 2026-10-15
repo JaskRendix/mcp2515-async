@@ -24,7 +24,7 @@ const TXB_PRIORITY_MASK: u8 = 0x03;
 
 // RXBn / Frame flags (Datasheet-aligned)
 const SIDL_SRR: u8 = 0x10; // Standard Frame RTR bit in SIDL
-const DLC_RTR: u8 = 0x40;  // Extended Frame RTR bit in DLC
+const DLC_RTR: u8 = 0x40; // Extended Frame RTR bit in DLC
 const RXB_ROLLOVER: u8 = 0x04;
 
 // CANINTF / CANINTE flags
@@ -67,21 +67,25 @@ pub fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
         let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
         let eid8 = (id >> 8) as u8;
         let eid0 = id as u8;
-        IdRegisters { sidh, sidl, eid8, eid0 }
+        IdRegisters {
+            sidh,
+            sidl,
+            eid8,
+            eid0,
+        }
     } else {
         let sidh = (id >> 3) as u8;
         let sidl = ((id & 0x07) << 5) as u8;
-        IdRegisters { sidh, sidl, eid8: 0, eid0: 0 }
+        IdRegisters {
+            sidh,
+            sidl,
+            eid8: 0,
+            eid0: 0,
+        }
     }
 }
 
-pub fn decode_id(
-    sidh: u8,
-    sidl: u8,
-    eid8: u8,
-    eid0: u8,
-    dlc_byte: u8,
-) -> (u32, bool, bool) {
+pub fn decode_id(sidh: u8, sidl: u8, eid8: u8, eid0: u8, dlc_byte: u8) -> (u32, bool, bool) {
     let is_extended = (sidl & 0x08) != 0;
 
     let is_rtr = if is_extended {
@@ -287,9 +291,7 @@ where
         self.write_id_registers(base_reg, is_extended, id).await
     }
 
-    async fn find_free_tx_buffer(
-        &mut self,
-    ) -> Result<(Instruction, Instruction), Error<E, PinE>> {
+    async fn find_free_tx_buffer(&mut self) -> Result<(Instruction, Instruction), Error<E, PinE>> {
         let txb0_ctrl = self.read_register(Register::TxB0Ctrl).await?;
         if (txb0_ctrl & TXB_TXREQ) == 0 {
             return Ok((Instruction::LoadTx0, Instruction::RtsTx0));
@@ -487,11 +489,13 @@ where
     }
 
     pub async fn enable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_RX_MASK, INTF_RX_MASK).await
+        self.modify_register(Register::CanInte, INTF_RX_MASK, INTF_RX_MASK)
+            .await
     }
 
     pub async fn disable_rx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_RX_MASK, 0x00).await
+        self.modify_register(Register::CanInte, INTF_RX_MASK, 0x00)
+            .await
     }
 
     pub async fn clear_rx0_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
@@ -511,27 +515,33 @@ where
     }
 
     pub async fn enable_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_ERRIF, INTF_ERRIF).await
+        self.modify_register(Register::CanInte, INTF_ERRIF, INTF_ERRIF)
+            .await
     }
 
     pub async fn disable_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_ERRIF, 0x00).await
+        self.modify_register(Register::CanInte, INTF_ERRIF, 0x00)
+            .await
     }
 
     pub async fn enable_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_WAKIF, INTF_WAKIF).await
+        self.modify_register(Register::CanInte, INTF_WAKIF, INTF_WAKIF)
+            .await
     }
 
     pub async fn disable_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_WAKIF, 0x00).await
+        self.modify_register(Register::CanInte, INTF_WAKIF, 0x00)
+            .await
     }
 
     pub async fn enable_tx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_TX_MASK, INTF_TX_MASK).await
+        self.modify_register(Register::CanInte, INTF_TX_MASK, INTF_TX_MASK)
+            .await
     }
 
     pub async fn disable_tx_interrupts(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanInte, INTF_TX_MASK, 0x00).await
+        self.modify_register(Register::CanInte, INTF_TX_MASK, 0x00)
+            .await
     }
 
     pub async fn rx0_overflowed(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -553,7 +563,8 @@ where
     }
 
     pub async fn clear_overflows(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::Eflg, EFLG_RX0OVR | EFLG_RX1OVR, 0).await
+        self.modify_register(Register::Eflg, EFLG_RX0OVR | EFLG_RX1OVR, 0)
+            .await
     }
 
     pub async fn tx0_busy(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -617,16 +628,20 @@ where
     }
 
     pub async fn abort_all_transmissions(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_ABAT, CANCTRL_ABAT).await?;
-        self.modify_register(Register::CanCtrl, CANCTRL_ABAT, 0x00).await
+        self.modify_register(Register::CanCtrl, CANCTRL_ABAT, CANCTRL_ABAT)
+            .await?;
+        self.modify_register(Register::CanCtrl, CANCTRL_ABAT, 0x00)
+            .await
     }
 
     pub async fn enable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_OSM, CANCTRL_OSM).await
+        self.modify_register(Register::CanCtrl, CANCTRL_OSM, CANCTRL_OSM)
+            .await
     }
 
     pub async fn disable_one_shot(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_OSM, 0x00).await
+        self.modify_register(Register::CanCtrl, CANCTRL_OSM, 0x00)
+            .await
     }
 
     pub async fn is_one_shot_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -635,35 +650,43 @@ where
     }
 
     pub async fn enable_clkout(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_EN, CANCTRL_CLKOUT_EN).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_EN, CANCTRL_CLKOUT_EN)
+            .await
     }
 
     pub async fn disable_clkout(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_EN, 0x00).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_EN, 0x00)
+            .await
     }
 
     pub async fn set_clkout_div1(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x00).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x00)
+            .await
     }
 
     pub async fn set_clkout_div2(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x01).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x01)
+            .await
     }
 
     pub async fn set_clkout_div4(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x02).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x02)
+            .await
     }
 
     pub async fn set_clkout_div8(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x03).await
+        self.modify_register(Register::CanCtrl, CANCTRL_CLKOUT_DIV_MASK, 0x03)
+            .await
     }
 
     pub async fn enable_rollover(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::RxB0Ctrl, RXB_ROLLOVER, RXB_ROLLOVER).await
+        self.modify_register(Register::RxB0Ctrl, RXB_ROLLOVER, RXB_ROLLOVER)
+            .await
     }
 
     pub async fn disable_rollover(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::RxB0Ctrl, RXB_ROLLOVER, 0x00).await
+        self.modify_register(Register::RxB0Ctrl, RXB_ROLLOVER, 0x00)
+            .await
     }
 
     pub async fn read_status(&mut self) -> Result<u8, Error<E, PinE>> {
@@ -750,15 +773,18 @@ where
     }
 
     pub async fn enable_wakeup_filter(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::Cnf3, CNF3_WAKFIL, CNF3_WAKFIL).await
+        self.modify_register(Register::Cnf3, CNF3_WAKFIL, CNF3_WAKFIL)
+            .await
     }
 
     pub async fn disable_wakeup_filter(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::Cnf3, CNF3_WAKFIL, 0x00).await
+        self.modify_register(Register::Cnf3, CNF3_WAKFIL, 0x00)
+            .await
     }
 
     pub async fn enable_start_of_frame(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::Cnf3, CNF3_SOF, CNF3_SOF).await
+        self.modify_register(Register::Cnf3, CNF3_SOF, CNF3_SOF)
+            .await
     }
 
     pub async fn disable_start_of_frame(&mut self) -> Result<(), Error<E, PinE>> {
