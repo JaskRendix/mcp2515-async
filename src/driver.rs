@@ -408,7 +408,8 @@ where
         reg: Register,
         priority: TxPriority,
     ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(reg, TXB_PRIORITY_MASK, priority as u8).await
+        self.modify_register(reg, TXB_PRIORITY_MASK, priority as u8)
+            .await
     }
 
     pub async fn set_tx0_priority(&mut self, priority: TxPriority) -> Result<(), Error<E, PinE>> {
