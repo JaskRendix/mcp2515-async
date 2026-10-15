@@ -15,7 +15,6 @@ pub const CAN_MAX_DLEN: usize = 8;
 pub enum FrameError {
     InvalidDlc,
     InvalidStandardId,
-    InvalidExtendedId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,10 +34,6 @@ impl CanFrame {
 
         if !is_extended && (can_id & !(CAN_SFF_MASK | CAN_FLAG_MASK)) != 0 {
             return Err(FrameError::InvalidStandardId);
-        }
-
-        if is_extended && (can_id & !(CAN_EFF_MASK | CAN_FLAG_MASK)) != 0 {
-            return Err(FrameError::InvalidExtendedId);
         }
 
         let mut d = [0u8; CAN_MAX_DLEN];
