@@ -94,7 +94,7 @@ fn encode_id(is_extended: bool, id: u32, set_exide: bool) -> IdRegisters {
 }
 
 fn decode_id(sidh: u8, sidl: u8, eid8: u8, eid0: u8, dlc_byte: u8) -> (u32, bool, bool) {
-    let is_extended = (sidl & 0x08) != 0;
+    let is_extended = (sidl & SIDL_EXIDE) != 0;
 
     let is_rtr = if is_extended {
         (dlc_byte & DLC_RTR) != 0
@@ -273,6 +273,8 @@ where
         self.spi.write(&buf).await.map_err(Error::Spi)
     }
 
+    /// MCP2515 must be in Configuration mode before
+    /// calling this function.
     pub async fn set_filter(
         &mut self,
         filter: AcceptanceFilter,
@@ -296,10 +298,11 @@ where
             return Err(Error::InvalidFrame);
         }
 
-        self.write_filter_registers(base_reg, is_extended, id)
-            .await
+        self.write_filter_registers(base_reg, is_extended, id).await
     }
 
+    /// MCP2515 must be in Configuration mode before
+    /// calling this function.
     pub async fn set_filter_mask(
         &mut self,
         mask: FilterMask,
@@ -319,8 +322,7 @@ where
             return Err(Error::InvalidFrame);
         }
 
-        self.write_mask_registers(base_reg, is_extended, id)
-            .await
+        self.write_mask_registers(base_reg, is_extended, id).await
     }
 
     async fn find_free_tx_buffer(&mut self) -> Result<(Instruction, Instruction), Error<E, PinE>> {
