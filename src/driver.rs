@@ -23,6 +23,7 @@ const TXB_ABTF: u8 = 0x40;
 const TXB_PRIORITY_MASK: u8 = 0x03;
 
 // RXBn / Frame flags (Datasheet-aligned)
+const SIDL_EXIDE: u8 = 0x08;
 const SIDL_SRR: u8 = 0x10; // Standard Frame RTR bit in SIDL
 const DLC_RTR: u8 = 0x40; // Extended Frame RTR bit in DLC
 const RXB_ROLLOVER: u8 = 0x04;
@@ -62,12 +63,17 @@ struct IdRegisters {
     pub eid0: u8,
 }
 
-fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
+fn encode_id(is_extended: bool, id: u32, set_exide: bool) -> IdRegisters {
     if is_extended {
         let sidh = (id >> 21) as u8;
-        let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
+
+        let sidl = (((id >> 13) & 0xE0) as u8)
+            | if set_exide { SIDL_EXIDE } else { 0x00 }
+            | (((id >> 16) & 0x03) as u8);
+
         let eid8 = (id >> 8) as u8;
         let eid0 = id as u8;
+
         IdRegisters {
             sidh,
             sidl,
@@ -77,6 +83,7 @@ fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
     } else {
         let sidh = (id >> 3) as u8;
         let sidl = ((id & 0x07) << 5) as u8;
+
         IdRegisters {
             sidh,
             sidl,
@@ -226,13 +233,14 @@ where
         Ok(())
     }
 
-    async fn write_id_registers(
+    async fn write_filter_registers(
         &mut self,
         start_reg: Register,
         is_extended: bool,
         id: u32,
     ) -> Result<(), Error<E, PinE>> {
-        let encoded = encode_id(is_extended, id);
+        let encoded = encode_id(is_extended, id, is_extended);
+
         let buf = [
             Instruction::Write as u8,
             start_reg as u8,
@@ -241,6 +249,27 @@ where
             encoded.eid8,
             encoded.eid0,
         ];
+
+        self.spi.write(&buf).await.map_err(Error::Spi)
+    }
+
+    async fn write_mask_registers(
+        &mut self,
+        start_reg: Register,
+        is_extended: bool,
+        id: u32,
+    ) -> Result<(), Error<E, PinE>> {
+        let encoded = encode_id(is_extended, id, false);
+
+        let buf = [
+            Instruction::Write as u8,
+            start_reg as u8,
+            encoded.sidh,
+            encoded.sidl,
+            encoded.eid8,
+            encoded.eid0,
+        ];
+
         self.spi.write(&buf).await.map_err(Error::Spi)
     }
 
@@ -267,7 +296,8 @@ where
             return Err(Error::InvalidFrame);
         }
 
-        self.write_id_registers(base_reg, is_extended, id).await
+        self.write_filter_registers(base_reg, is_extended, id)
+            .await
     }
 
     pub async fn set_filter_mask(
@@ -289,7 +319,8 @@ where
             return Err(Error::InvalidFrame);
         }
 
-        self.write_id_registers(base_reg, is_extended, id).await
+        self.write_mask_registers(base_reg, is_extended, id)
+            .await
     }
 
     async fn find_free_tx_buffer(&mut self) -> Result<(Instruction, Instruction), Error<E, PinE>> {
@@ -331,7 +362,7 @@ where
             frame.standard_id() as u32
         };
 
-        let encoded = encode_id(is_ext, id);
+        let encoded = encode_id(is_ext, id, is_ext);
         let dlc_len = frame.can_dlc as usize;
         let mut buf = [0u8; 14];
         buf[0] = load_instr as u8;
