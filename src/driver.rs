@@ -506,8 +506,7 @@ where
     }
 
     pub async fn clear_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
-        self.modify_register(Register::CanIntf, INTF_WAKIF, 0)
-            .await
+        self.modify_register(Register::CanIntf, INTF_WAKIF, 0).await
     }
 
     pub async fn error_interrupt_pending(&mut self) -> Result<bool, Error<E, PinE>> {
@@ -828,15 +827,9 @@ where
         Ok((cnf3 & CNF3_SOF) != 0)
     }
 
-    pub async fn enable_message_error_interrupt(
-        &mut self,
-    ) -> Result<(), Error<E, PinE>> {
-        self.modify_register(
-            Register::CanInte,
-            INTF_MERRIF,
-            INTF_MERRIF,
-        )
-        .await
+    pub async fn enable_message_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, INTF_MERRIF, INTF_MERRIF)
+            .await
     }
 
     pub async fn disable_message_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
