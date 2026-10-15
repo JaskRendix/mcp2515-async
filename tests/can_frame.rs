@@ -170,6 +170,7 @@ fn data_is_copied_into_frame() {
 
     payload[0] = 99;
 
+    assert_eq!(payload[0], 99);
     assert_eq!(frame.data[0], 1);
 }
 
