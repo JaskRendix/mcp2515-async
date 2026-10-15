@@ -656,3 +656,93 @@ async fn set_tx2_priority_low() {
         ]
     );
 }
+
+#[tokio::test]
+async fn set_filter_writes_extended_id_registers() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_filter(
+            AcceptanceFilter::Rxf0,
+            true,
+            0x1ABCDE,
+        )
+        .await
+        .unwrap();
+
+    let write = &t.spi.writes()[0];
+
+    assert_eq!(write[0], Instruction::Write as u8);
+    assert_eq!(write[1], Register::RxF0SidH as u8);
+
+    // EXIDE must be set for filters
+    assert_ne!(write[3] & 0x08, 0);
+}
+
+#[tokio::test]
+async fn set_filter_mask_does_not_set_exide() {
+    let mut t = TestDevice::new();
+
+    t.dev
+        .set_filter_mask(
+            FilterMask::Mask0,
+            true,
+            0x1ABCDE,
+        )
+        .await
+        .unwrap();
+
+    let write = &t.spi.writes()[0];
+
+    assert_eq!(write[0], Instruction::Write as u8);
+    assert_eq!(write[1], Register::RxM0SidH as u8);
+
+    assert_eq!(write[3] & 0x08, 0);
+}
+
+#[tokio::test]
+async fn send_extended_frame_sets_exide() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0]);
+
+    let frame =
+        CanFrame::new(CAN_EFF_FLAG | 0x123456, &[1])
+            .unwrap();
+
+    t.dev.send(&frame).await.unwrap();
+
+    let tx = &t.spi.writes()[0];
+
+    assert_ne!(tx[2] & 0x08, 0);
+}
+
+#[tokio::test]
+async fn set_filter_rejects_invalid_standard_id() {
+    let mut t = TestDevice::new();
+
+    assert!(
+        t.dev
+            .set_filter(
+                AcceptanceFilter::Rxf0,
+                false,
+                0x800,
+            )
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn set_filter_mask_rejects_invalid_standard_id() {
+    let mut t = TestDevice::new();
+
+    assert!(
+        t.dev
+            .set_filter_mask(
+                FilterMask::Mask0,
+                false,
+                0x800,
+            )
+            .await
+            .is_err()
+    );
+}
