@@ -662,11 +662,7 @@ async fn set_filter_writes_extended_id_registers() {
     let mut t = TestDevice::new();
 
     t.dev
-        .set_filter(
-            AcceptanceFilter::Rxf0,
-            true,
-            0x1ABCDE,
-        )
+        .set_filter(AcceptanceFilter::Rxf0, true, 0x1ABCDE)
         .await
         .unwrap();
 
@@ -684,11 +680,7 @@ async fn set_filter_mask_does_not_set_exide() {
     let mut t = TestDevice::new();
 
     t.dev
-        .set_filter_mask(
-            FilterMask::Mask0,
-            true,
-            0x1ABCDE,
-        )
+        .set_filter_mask(FilterMask::Mask0, true, 0x1ABCDE)
         .await
         .unwrap();
 
@@ -704,9 +696,7 @@ async fn set_filter_mask_does_not_set_exide() {
 async fn send_extended_frame_sets_exide() {
     let mut t = TestDevice::with_transfer_output(&[0, 0, 0]);
 
-    let frame =
-        CanFrame::new(CAN_EFF_FLAG | 0x123456, &[1])
-            .unwrap();
+    let frame = CanFrame::new(CAN_EFF_FLAG | 0x123456, &[1]).unwrap();
 
     t.dev.send(&frame).await.unwrap();
 
@@ -721,11 +711,7 @@ async fn set_filter_rejects_invalid_standard_id() {
 
     assert!(
         t.dev
-            .set_filter(
-                AcceptanceFilter::Rxf0,
-                false,
-                0x800,
-            )
+            .set_filter(AcceptanceFilter::Rxf0, false, 0x800,)
             .await
             .is_err()
     );
@@ -737,12 +723,83 @@ async fn set_filter_mask_rejects_invalid_standard_id() {
 
     assert!(
         t.dev
-            .set_filter_mask(
-                FilterMask::Mask0,
-                false,
-                0x800,
-            )
+            .set_filter_mask(FilterMask::Mask0, false, 0x800,)
             .await
             .is_err()
+    );
+}
+
+#[tokio::test]
+async fn send_uses_tx1_when_tx0_is_busy() {
+    let mut t = TestDevice::with_transfer_outputs(&[
+        &[0, 0, 0x08], // TXB0CTRL busy
+        &[0, 0, 0x00], // TXB1CTRL free
+    ]);
+
+    let frame = CanFrame::new(0x123, &[1]).unwrap();
+
+    t.dev.send(&frame).await.unwrap();
+
+    let writes = t.spi.writes();
+
+    assert_eq!(writes[0][0], Instruction::LoadTx1 as u8);
+    assert_eq!(writes[1], vec![Instruction::RtsTx1 as u8]);
+}
+
+#[tokio::test]
+async fn send_uses_tx2_when_tx0_and_tx1_are_busy() {
+    let mut t = TestDevice::with_transfer_outputs(&[
+        &[0, 0, 0x08],
+        &[0, 0, 0x08],
+        &[0, 0, 0x00],
+    ]);
+
+    let frame = CanFrame::new(0x123, &[1]).unwrap();
+
+    t.dev.send(&frame).await.unwrap();
+
+    let writes = t.spi.writes();
+
+    assert_eq!(writes[0][0], Instruction::LoadTx2 as u8);
+    assert_eq!(writes[1], vec![Instruction::RtsTx2 as u8]);
+}
+
+#[tokio::test]
+async fn send_fails_when_all_tx_buffers_are_busy() {
+    let mut t = TestDevice::with_transfer_outputs(&[
+        &[0, 0, 0x08],
+        &[0, 0, 0x08],
+        &[0, 0, 0x08],
+    ]);
+
+    let frame = CanFrame::new(0x123, &[1]).unwrap();
+
+    assert_eq!(
+        t.dev.send(&frame).await.unwrap_err(),
+        mcp2515_async::error::Error::NoTxBufferAvailable
+    );
+}
+
+#[tokio::test]
+async fn read_returns_no_message_when_no_rx_flags_set() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x00]);
+
+    assert_eq!(
+        t.dev.read().await.unwrap_err(),
+        mcp2515_async::error::Error::NoMessageAvailable
+    );
+}
+
+#[tokio::test]
+async fn read_prefers_rx0_when_both_buffers_have_messages() {
+    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x03]);
+
+    let _ = t.dev.read().await;
+
+    let transfers = t.spi.transfers();
+
+    assert_eq!(
+        transfers[1].1[0],
+        Instruction::ReadRx0 as u8
     );
 }
