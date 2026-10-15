@@ -691,7 +691,7 @@ where
     }
 
     pub async fn read_status(&mut self) -> Result<u8, Error<E, PinE>> {
-        let tx = [0xA0, 0x00];
+        let tx = [Instruction::ReadStatus as u8, 0x00];
         let mut rx = [0u8; 2];
 
         self.spi.transfer(&mut rx, &tx).await.map_err(Error::Spi)?;
@@ -705,7 +705,7 @@ where
     }
 
     pub async fn rx_status(&mut self) -> Result<u8, Error<E, PinE>> {
-        let tx = [0xB0, 0x00];
+        let tx = [Instruction::RxStatus as u8, 0x00];
         let mut rx = [0u8; 2];
 
         self.spi.transfer(&mut rx, &tx).await.map_err(Error::Spi)?;
