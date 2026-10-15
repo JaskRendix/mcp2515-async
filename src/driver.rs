@@ -35,6 +35,7 @@ const INTF_TX1IF: u8 = 0x08;
 const INTF_TX2IF: u8 = 0x10;
 const INTF_ERRIF: u8 = 0x20;
 const INTF_WAKIF: u8 = 0x40;
+const INTF_MERRIF: u8 = 0x80;
 const INTF_TX_MASK: u8 = INTF_TX0IF | INTF_TX1IF | INTF_TX2IF;
 const INTF_RX_MASK: u8 = INTF_RX0IF | INTF_RX1IF;
 
@@ -54,14 +55,14 @@ const CNF3_SOF: u8 = 0x80;
 
 // --- ID Encoding/Decoding Helpers ---
 
-pub struct IdRegisters {
+struct IdRegisters {
     pub sidh: u8,
     pub sidl: u8,
     pub eid8: u8,
     pub eid0: u8,
 }
 
-pub fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
+fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
     if is_extended {
         let sidh = (id >> 21) as u8;
         let sidl = (((id >> 13) & 0xE0) as u8) | 0x08 | (((id >> 16) & 0x03) as u8);
@@ -85,7 +86,7 @@ pub fn encode_id(is_extended: bool, id: u32) -> IdRegisters {
     }
 }
 
-pub fn decode_id(sidh: u8, sidl: u8, eid8: u8, eid0: u8, dlc_byte: u8) -> (u32, bool, bool) {
+fn decode_id(sidh: u8, sidl: u8, eid8: u8, eid0: u8, dlc_byte: u8) -> (u32, bool, bool) {
     let is_extended = (sidl & 0x08) != 0;
 
     let is_rtr = if is_extended {
@@ -484,6 +485,31 @@ where
         Ok((intf & INTF_RX1IF) != 0)
     }
 
+    pub async fn tx0_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & INTF_TX0IF) != 0)
+    }
+
+    pub async fn tx1_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & INTF_TX1IF) != 0)
+    }
+
+    pub async fn tx2_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & INTF_TX2IF) != 0)
+    }
+
+    pub async fn wakeup_interrupt_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & INTF_WAKIF) != 0)
+    }
+
+    pub async fn clear_wakeup_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanIntf, INTF_WAKIF, 0)
+            .await
+    }
+
     pub async fn error_interrupt_pending(&mut self) -> Result<bool, Error<E, PinE>> {
         let intf = self.read_interrupt_flags().await?;
         Ok((intf & INTF_ERRIF) != 0)
@@ -800,5 +826,31 @@ where
     pub async fn start_of_frame_enabled(&mut self) -> Result<bool, Error<E, PinE>> {
         let cnf3 = self.read_register(Register::Cnf3).await?;
         Ok((cnf3 & CNF3_SOF) != 0)
+    }
+
+    pub async fn enable_message_error_interrupt(
+        &mut self,
+    ) -> Result<(), Error<E, PinE>> {
+        self.modify_register(
+            Register::CanInte,
+            INTF_MERRIF,
+            INTF_MERRIF,
+        )
+        .await
+    }
+
+    pub async fn disable_message_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanInte, INTF_MERRIF, 0)
+            .await
+    }
+
+    pub async fn message_error_interrupt_pending(&mut self) -> Result<bool, Error<E, PinE>> {
+        let intf = self.read_interrupt_flags().await?;
+        Ok((intf & INTF_MERRIF) != 0)
+    }
+
+    pub async fn clear_message_error_interrupt(&mut self) -> Result<(), Error<E, PinE>> {
+        self.modify_register(Register::CanIntf, INTF_MERRIF, 0)
+            .await
     }
 }
