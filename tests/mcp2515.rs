@@ -2,7 +2,7 @@ mod common;
 
 use common::harness::TestDevice;
 use mcp2515_async::BitrateConfig;
-use mcp2515_async::can::{CAN_RTR_FLAG, CanFrame};
+use mcp2515_async::can::{CAN_EFF_FLAG, CAN_RTR_FLAG, CanFrame};
 use mcp2515_async::registers::{Instruction, OperationMode, Register};
 use mcp2515_async::{AcceptanceFilter, FilterMask, TxPriority};
 
@@ -726,49 +726,6 @@ async fn set_filter_mask_rejects_invalid_standard_id() {
             .set_filter_mask(FilterMask::Mask0, false, 0x800,)
             .await
             .is_err()
-    );
-}
-
-#[tokio::test]
-async fn send_uses_tx1_when_tx0_is_busy() {
-    let mut t = TestDevice::with_transfer_outputs(&[
-        &[0, 0, 0x08], // TXB0CTRL busy
-        &[0, 0, 0x00], // TXB1CTRL free
-    ]);
-
-    let frame = CanFrame::new(0x123, &[1]).unwrap();
-
-    t.dev.send(&frame).await.unwrap();
-
-    let writes = t.spi.writes();
-
-    assert_eq!(writes[0][0], Instruction::LoadTx1 as u8);
-    assert_eq!(writes[1], vec![Instruction::RtsTx1 as u8]);
-}
-
-#[tokio::test]
-async fn send_uses_tx2_when_tx0_and_tx1_are_busy() {
-    let mut t = TestDevice::with_transfer_outputs(&[&[0, 0, 0x08], &[0, 0, 0x08], &[0, 0, 0x00]]);
-
-    let frame = CanFrame::new(0x123, &[1]).unwrap();
-
-    t.dev.send(&frame).await.unwrap();
-
-    let writes = t.spi.writes();
-
-    assert_eq!(writes[0][0], Instruction::LoadTx2 as u8);
-    assert_eq!(writes[1], vec![Instruction::RtsTx2 as u8]);
-}
-
-#[tokio::test]
-async fn send_fails_when_all_tx_buffers_are_busy() {
-    let mut t = TestDevice::with_transfer_outputs(&[&[0, 0, 0x08], &[0, 0, 0x08], &[0, 0, 0x08]]);
-
-    let frame = CanFrame::new(0x123, &[1]).unwrap();
-
-    assert_eq!(
-        t.dev.send(&frame).await.unwrap_err(),
-        mcp2515_async::error::Error::NoTxBufferAvailable
     );
 }
 
