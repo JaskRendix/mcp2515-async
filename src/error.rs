@@ -7,4 +7,5 @@ pub enum Error<E, PinE = core::convert::Infallible> {
     InvalidDlc,
     InvalidFrame,
     ModeChangeTimeout,
+    BufferTooLarge,
 }
