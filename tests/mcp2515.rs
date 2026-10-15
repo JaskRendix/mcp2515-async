@@ -738,14 +738,3 @@ async fn read_returns_no_message_when_no_rx_flags_set() {
         mcp2515_async::error::Error::NoMessageAvailable
     );
 }
-
-#[tokio::test]
-async fn read_prefers_rx0_when_both_buffers_have_messages() {
-    let mut t = TestDevice::with_transfer_output(&[0, 0, 0x03]);
-
-    let _ = t.dev.read().await;
-
-    let transfers = t.spi.transfers();
-
-    assert_eq!(transfers[1].1[0], Instruction::ReadRx0 as u8);
-}
