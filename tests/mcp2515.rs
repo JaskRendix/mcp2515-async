@@ -748,11 +748,7 @@ async fn send_uses_tx1_when_tx0_is_busy() {
 
 #[tokio::test]
 async fn send_uses_tx2_when_tx0_and_tx1_are_busy() {
-    let mut t = TestDevice::with_transfer_outputs(&[
-        &[0, 0, 0x08],
-        &[0, 0, 0x08],
-        &[0, 0, 0x00],
-    ]);
+    let mut t = TestDevice::with_transfer_outputs(&[&[0, 0, 0x08], &[0, 0, 0x08], &[0, 0, 0x00]]);
 
     let frame = CanFrame::new(0x123, &[1]).unwrap();
 
@@ -766,11 +762,7 @@ async fn send_uses_tx2_when_tx0_and_tx1_are_busy() {
 
 #[tokio::test]
 async fn send_fails_when_all_tx_buffers_are_busy() {
-    let mut t = TestDevice::with_transfer_outputs(&[
-        &[0, 0, 0x08],
-        &[0, 0, 0x08],
-        &[0, 0, 0x08],
-    ]);
+    let mut t = TestDevice::with_transfer_outputs(&[&[0, 0, 0x08], &[0, 0, 0x08], &[0, 0, 0x08]]);
 
     let frame = CanFrame::new(0x123, &[1]).unwrap();
 
@@ -798,8 +790,5 @@ async fn read_prefers_rx0_when_both_buffers_have_messages() {
 
     let transfers = t.spi.transfers();
 
-    assert_eq!(
-        transfers[1].1[0],
-        Instruction::ReadRx0 as u8
-    );
+    assert_eq!(transfers[1].1[0], Instruction::ReadRx0 as u8);
 }
