@@ -98,9 +98,12 @@ fn reject_standard_id_above_max() {
 }
 
 #[test]
-fn reject_extended_id_above_max() {
+fn extended_id_above_max_is_masked() {
     let id = CAN_EFF_FLAG | 0x2000_0000;
-    assert!(CanFrame::new(id, &[0]).is_err());
+
+    let frame = CanFrame::new(id, &[0]).unwrap();
+
+    assert_eq!(frame.extended_id(), 0);
 }
 
 #[test]
